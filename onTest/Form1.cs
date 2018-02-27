@@ -21,8 +21,31 @@ namespace onTest
 
         private void button1_Click(object sender, EventArgs e)
         {
-            MRZParser.Mrz = "P<GBRMALIK<<MUSSARAT<ZARIN<<<<<<<<<<<<<<<<<<5119237240GBR4612078F2212119<<<<<<<<<<<<<<04";
-            MessageBox.Show(MRZParser.IssuingCountryName);
+            MRZParser.Mrz = dfsMRZ.Text;
+            dfsIssuingCountry.Text = MRZParser.IssuingCountryIso;
+            dfsFirstName.Text = MRZParser.FirstName;
+            dfsLastName.Text = MRZParser.LastName;
+            dfsDocumentNumber.Text = MRZParser.DocumentNumber;
+            dfsNationality.Text = MRZParser.NationalityIso;
+            dfdDOB.Text = MRZParser.DateOfBirth.ToString("dd/MM/yyyy");
+            dfdExpireDate.Text = MRZParser.ExpireDate.ToString("dd/MM/yyyy");
+            dfsGender.Text = MRZParser.Gender;
+
+
+
+        }
+
+        private void btnMake_Click(object sender, EventArgs e)
+        {
+            MRZParser.Mrz = string.Empty;
+   MRZParser.IssuingCountryIso=          dfsIssuingCountry.Text ;
+ MRZParser.FirstName=            dfsFirstName.Text ;
+ MRZParser.LastName=            dfsLastName.Text ;
+ MRZParser.DocumentNumber=            dfsDocumentNumber.Text ;
+ MRZParser.NationalityIso=            dfsNationality.Text ;
+            MRZParser.DateOfBirth = DateTime.Parse(dfdDOB.Text);
+ MRZParser.ExpireDate = DateTime.Parse(dfdExpireDate.Text); 
+ MRZParser.Gender=            dfsGender.Text ;
         }
     }
 }

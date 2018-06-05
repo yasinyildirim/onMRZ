@@ -1,12 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using onMRZ;
 
@@ -21,31 +13,35 @@ namespace onTest
 
         private void button1_Click(object sender, EventArgs e)
         {
-            MRZParser.Mrz = dfsMRZ.Text;
-            dfsIssuingCountry.Text = MRZParser.IssuingCountryIso;
-            dfsFirstName.Text = MRZParser.FirstName;
-            dfsLastName.Text = MRZParser.LastName;
-            dfsDocumentNumber.Text = MRZParser.DocumentNumber;
-            dfsNationality.Text = MRZParser.NationalityIso;
-            dfdDOB.Text = MRZParser.DateOfBirth.ToString("dd/MM/yyyy");
-            dfdExpireDate.Text = MRZParser.ExpireDate.ToString("dd/MM/yyyy");
-            dfsGender.Text = MRZParser.Gender;
-
-
-
+            var parser = new MRZParser();
+            var customer = parser.Parse(dfsMRZ.Text);
+            dfsIssuingCountry.Text = customer.IssuingCountryIso;
+            dfsFirstName.Text = customer.FirstName;
+            dfsLastName.Text = customer.LastName;
+            dfsDocumentNumber.Text = customer.DocumentNumber;
+            dfsNationality.Text = customer.NationalityIso;
+            dfdDOB.Text = customer.DateOfBirth.ToString("dd/MM/yyyy");
+            dfdExpireDate.Text = customer.ExpireDate.ToString("dd/MM/yyyy");
+            dfsGender.Text = customer.Gender;
         }
 
         private void btnMake_Click(object sender, EventArgs e)
         {
-            MRZParser.Mrz = string.Empty;
-   MRZParser.IssuingCountryIso=          dfsIssuingCountry.Text ;
- MRZParser.FirstName=            dfsFirstName.Text ;
- MRZParser.LastName=            dfsLastName.Text ;
- MRZParser.DocumentNumber=            dfsDocumentNumber.Text ;
- MRZParser.NationalityIso=            dfsNationality.Text ;
-            MRZParser.DateOfBirth = DateTime.Parse(dfdDOB.Text);
- MRZParser.ExpireDate = DateTime.Parse(dfdExpireDate.Text); 
- MRZParser.Gender=            dfsGender.Text ;
+            var parser = new MRZParser();
+            var customer = new Customer
+            {
+                IssuingCountryIso = dfsIssuingCountry.Text,
+                FirstName = dfsFirstName.Text,
+                LastName = dfsLastName.Text,
+                DocumentNumber = dfsDocumentNumber.Text,
+                NationalityIso = dfsNationality.Text,
+                DateOfBirth = DateTime.Parse(dfdDOB.Text),
+                ExpireDate = DateTime.Parse(dfdExpireDate.Text),
+                Gender = dfsGender.Text
+            };
+
+
+            dfsMRZ.Text = parser.CreatMrz(customer, false);
         }
     }
 }

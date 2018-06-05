@@ -4,274 +4,195 @@ using System.Linq;
 
 namespace onMRZ
 {
-    public static class MRZParser
+    public  class MRZParser
     {
-        private static readonly Nationalities Nationalities = new Nationalities();
+        private  readonly Nationalities _nationalities = new Nationalities();
 
 
-        private static readonly Dictionary<char, int> CheckDigitArray = new Dictionary<char, int>();
+        private  readonly Dictionary<char, int> _checkDigitArray = new Dictionary<char, int>();
 
         //Parsing is based on https://en.wikipedia.org/wiki/Machine-readable_passport
         //Useful information https://www.icao.int/publications/Documents/9303_p3_cons_en.pdf
-        public static string DocumentType
+
+        public Customer Parse(string mrz)
         {
-            get
+            var validationMessage = MRZValidationMessage(mrz);
+            if (!string.IsNullOrEmpty(validationMessage)) return new Customer {IsValid = false, ValidationMessage = validationMessage};
+
+            var output = new Customer
             {
-                return string.IsNullOrEmpty(MrzLine1) ? string.Empty : MrzLine1.Substring(0, 1);
-            }
-            set
-            {
-                if (DocumentType != value)
-                    DocumentType = value;
-            }
+                DocumentType = DocumentType(mrz),
+                Gender = Gender(mrz),
+                ExpireDate = ExpireDate(mrz),
+                IssuingCountryIso = IssuingCountryIso(mrz),
+                FirstName = FirstName(mrz),
+                LastName = LastName(mrz),
+                DocumentNumber = DocumentNumber(mrz),
+                NationalityIso = NationalityIso(mrz),
+                DateOfBirth = DateOfBirth(mrz)
+            };
+
+            output.DocumentTypeDescription = DocumentTypeDescription(output.DocumentType);
+
+            output.IssuingCountryName = IssuingCountryName(output.IssuingCountryIso);
+
+            output.FullName = (output.FirstName + " " + output.LastName).Replace("  ", " ").Trim();
+
+            output.NationalityName = NationalityName(output.NationalityIso);
+
+            output.Age = (int) (DateTime.Now.Subtract(output.DateOfBirth).TotalDays / 365);
+
+            output.IssueDate = IssueDate(output.ExpireDate, output.NationalityIso);
+            output.IssuingAuthority = IssuingAuthority(output.IssuingCountryIso);
+            output.PlaceOfBirth = PlaceOfBirth(output.NationalityIso);
+
+            return output;
         }
 
-        public static string DocumentTypeDescription
+        private string MRZValidationMessage(string mrz)
         {
-            get
-            {
-                if (string.IsNullOrEmpty(DocumentType)) return string.Empty;
-                var description = "Unknown Document Type";
-                switch (DocumentType)
+            if (string.IsNullOrEmpty(mrz)) return "Empty MRZ";
+            if (mrz.Length < 88) return $"MRZ length is not valid should be 88 but it is {mrz.Length}";
+            if (mrz.Substring(0,1) != "P" && mrz.Substring(0, 1) != "V" && mrz.Substring(0, 1) != "C") return $"Document Type should either be P, V or C";
+
+            return string.Empty;
+        }
+
+        private  string DocumentType(string mrz)
+        {
+           return mrz.Substring(0, 1);
+
+        }
+
+        private  string DocumentTypeDescription(string docType)
+        {
+                switch (docType)
                 {
                     case "P":
-                        description = "Passport";
-                        break;
+                        return "Passport";
                     case "C":
-                        description = "Card";
-                        break;
+                        return "Card";
                     case "V":
-                        description = "Visa";
-                        break;
+                        return "Visa";
+                    default:
+                    throw new Exception("Invalid Document Type");
                 }
-                switch (NationalityIso)
-                {
-                    case "XXA":
-                        description += " Stateless";
-                        break;
-                    case "XXB":
-                        description += " Refugee";
-                        break;
-                    case "XXC":
-                        description += " Refugee not defined per 1951 convention";
-                        break;
-                    case "XXX":
-                        description += " Unspecified Nationality";
-                        break;
-                }
-                return description;
-            }
             
         }
 
 
-        public static string AdditionalDocumentType //Type (for countries that distinguish between different types of passports)
+
+        private  string IssuingCountryIso(string mrz)
         {
-            get 
-            {
-                return string.IsNullOrEmpty(MrzLine1) ? string.Empty : MrzLine1.Substring(1, 1);
-            }
-            set 
-            {
-                if (AdditionalDocumentType != value)
-                    AdditionalDocumentType = value;
-            }
+              return mrz.Substring(2, 3);
+
         }
 
-
-
-        public static string IssuingCountryIso
+        private  string IssuingCountryName(string issIso)
         {
-            get 
-            {
-                return string.IsNullOrEmpty(MrzLine1) ? string.Empty : MrzLine1.Substring(2, 3);
-            }
-            set //todo
-            {
-                if (IssuingCountryIso != value)
-                    IssuingCountryIso = value;
-            }
-        }
-
-        public static string IssuingCountryName
-        {
-            get  
-            {
-                var natItem = Nationalities.NationalitybyCode(IssuingCountryIso);
+                var natItem = _nationalities.NationalitybyCode(issIso);
                 return natItem != null ? natItem.Name : string.Empty;
-            }
-            set  
-            {
-                if (IssuingCountryName != value)
-                    IssuingCountryName = value;
-            }
+
         }
 
-        public static string FirstName
+        private  string FirstName(string mrz)
         {
-            get  
-            {
-                if (string.IsNullOrEmpty(MrzLine1) || MrzLine1.Length < 44) return string.Empty;
-                var nameArraySplit = MrzLine1.Substring(5).Split(new[] {"<<"}, StringSplitOptions.RemoveEmptyEntries);
+                var nameArraySplit = mrz.Substring(5).Split(new[] {"<<"}, StringSplitOptions.RemoveEmptyEntries);
                 return nameArraySplit.Length >= 2 ? nameArraySplit[1].Replace("<", " ") : nameArraySplit[0].Replace("<", " ");
-            }
-            set
-            {
-                if (FirstName != value)
-                    FirstName = value;
-            }
+
         }
 
-        public static string LastName
+        private  string LastName(string mrz)
         {
-            get  
-            {
-                if (string.IsNullOrEmpty(MrzLine1) || MrzLine1.Length < 44) return string.Empty;
-                var nameArraySplit = MrzLine1.Substring(5).Split(new[] {"<<"}, StringSplitOptions.RemoveEmptyEntries);
+
+                var nameArraySplit = mrz.Substring(5).Split(new[] {"<<"}, StringSplitOptions.RemoveEmptyEntries);
                 return nameArraySplit.Length >= 2 ? nameArraySplit[0].Replace("<", " ") : string.Empty;
-            }
-            set
-            {
-                if (LastName != value)
-                    LastName = value;
-            }
+
         }
 
-        public static string FullName => (FirstName + " " + LastName).Trim();
 
-        public static string DocumentNumber
+        private  string DocumentNumber(string mrz)
         {
-            get  
-            {
-                if (string.IsNullOrEmpty(MrzLine2) || MrzLine2.Length < 44) return string.Empty;
-                return MrzLine2.Substring(0, 9).Replace("<", string.Empty);
-            }
-            set
-            {
-                if (DocumentNumber != value)
-                    DocumentNumber = value;
-            }
+
+                return mrz.Substring(0+44, 9).Replace("<", string.Empty);
+
         }
 
-        public static string NationalityIso
+        private  string NationalityIso(string mrz)
         {
-            get  
-            {
-                if (string.IsNullOrEmpty(MrzLine2) || MrzLine2.Length < 44) return string.Empty;
-                return MrzLine2.Substring(10, 3);
-            }
-            set
-            {
-                if (NationalityIso != value)
-                    NationalityIso = value;
-            }
+                return mrz.Substring(10+44, 3);
+
         }
 
-        public static string NationalityName
+        private  string NationalityName(string natIso)
         {
-            get  
-            {
-                var natItem = Nationalities.NationalitybyCode(NationalityIso);
+                var natItem = _nationalities.NationalitybyCode(natIso);
                 return natItem != null ? natItem.Name : string.Empty;
-            }
-            set  
-            {
-                if (NationalityName != value)
-                    NationalityName = value;
-            }
+
         }
 
-        public static DateTime DateOfBirth
+        private  DateTime DateOfBirth(string mrz)
         {
-            get  
-            {
-                if (string.IsNullOrEmpty(MrzLine2)) return new DateTime(1900, 1, 1);
-                return new DateTime(int.Parse("20" + MrzLine2.Substring(13, 2)), int.Parse(MrzLine2.Substring(15, 2)),
-                    int.Parse(MrzLine2.Substring(17, 2)));
-            }
-            set  
-            {
-                if (DateOfBirth != value)
-                    DateOfBirth = value;
-            }
+            var dob = new DateTime(int.Parse(DateTime.Now.Year.ToString().Substring(0,2) + mrz.Substring(13+44, 2)), int.Parse(mrz.Substring(15+44, 2)),
+                    int.Parse(mrz.Substring(17+44, 2)));
+
+            if (dob < DateTime.Now)
+                return dob;
+
+            return dob.AddYears(-100); //Subtract a century
+
         }
 
-        public static double Age => DateTime.Now.Subtract(DateOfBirth).TotalDays / 365;
 
-        public static string Gender
+
+        private  string Gender(string mrz)
         {
-            get  
-            {
-                if (string.IsNullOrEmpty(MrzLine2) || MrzLine2.Length < 44) return string.Empty;
-                return MrzLine2.Substring(20, 1);
-            }
-            set
-            {
-                if (Gender != value)
-                    Gender = value;
-            }
+
+                return mrz.Substring(20+44, 1);
+
         }
 
-        public static DateTime ExpireDate
+        private  DateTime ExpireDate(string mrz)
         {
-            get 
-            {
-                if (string.IsNullOrEmpty(MrzLine2)) return new DateTime(1900, 1, 1);
-                return new DateTime(int.Parse("20" + MrzLine2.Substring(21, 2)), int.Parse(MrzLine2.Substring(23, 2)),
-                    int.Parse(MrzLine2.Substring(25, 2)));
-            }
-            set 
-            {
-                if (ExpireDate != value)
-                    ExpireDate = value;
-            }
+            //I am assuming all passports will certainly expire this century
+                return new DateTime(int.Parse(DateTime.Now.Year.ToString().Substring(0,2) + mrz.Substring(21+44, 2)), int.Parse(mrz.Substring(23+44, 2)),
+                    int.Parse(mrz.Substring(25+44, 2)));
+
         }
 
-        public static DateTime IssueDate { get; set; }
-        public static string IssuingAuthority { get; set; }
-        public static string PlaceOfBirth { get; set; }
-
-        public static string MrzLine1 =>
-            !string.IsNullOrEmpty(Mrz) && Mrz.Length >= 44 ? Mrz.Substring(0, 44) : string.Empty;
-
-        public static string MrzLine2 => !string.IsNullOrEmpty(Mrz) && Mrz.Length >= 88
-            ? Mrz.Replace("\n", "").Replace("\r", "").Substring(44, 44)
-            : string.Empty;
-
-        private static string _mrz;
-        public static string Mrz
+        private DateTime IssueDate(DateTime expireDate, string nationality)
         {
-            get
-            {
-                if (string.IsNullOrEmpty(_mrz))
-                {
-                    return CreatMrz(false); 
-                }
-                return _mrz;
-            }
-            set
-            {
-                _mrz = value;
-            }
+            return new DateTime(1900,1,1); //todo calculate based on Expire Date and nationality
         }
 
-        public static string MrzwFullName { get; private set; }
-
-        private static string CreatMrz(bool isMakeFullName)
+        private string IssuingAuthority(string issuingCountry)
         {
-            if (string.IsNullOrEmpty(IssuingCountryIso) || string.IsNullOrEmpty(LastName) || string.IsNullOrEmpty(FirstName) || string.IsNullOrEmpty(DocumentNumber) ||
-                string.IsNullOrEmpty(NationalityIso) || DateOfBirth.Year < 1901 || string.IsNullOrEmpty(Gender) || ExpireDate.Year < 1901) return string.Empty;
-            var line1 = "P<" + IssuingCountryIso + (LastName + "<<" + FirstName).Replace(" ", "<");
+            return "USDS"; //todo calculate based on issuing Country
+        }
+
+        private string PlaceOfBirth(string nationality)
+        {
+            return "Karachi"; //todo calculate based on nationality
+        }
+
+
+
+
+        public  string CreatMrz(Customer customer, bool isMakeFullName)
+        {
+            if (string.IsNullOrEmpty(customer.IssuingCountryIso) || string.IsNullOrEmpty(customer.LastName) || string.IsNullOrEmpty(customer.FirstName) || string.IsNullOrEmpty(customer.DocumentNumber) ||
+                string.IsNullOrEmpty(customer.NationalityIso) || customer.DateOfBirth.Year < 1901 || string.IsNullOrEmpty(customer.Gender) || customer.ExpireDate.Year < 1901) return string.Empty;
+            var line1 = "P<" + customer.IssuingCountryIso + (customer.LastName + "<<" + customer.FirstName).Replace(" ", "<");
             if (isMakeFullName)
-                line1 = "P<" + IssuingCountryIso + (FirstName + "<" + LastName).Replace(" ", "<");
+                line1 = "P<" + customer.IssuingCountryIso + (customer.FirstName + "<" + customer.LastName).Replace(" ", "<");
             line1 = line1.PadRight(44, '<').Replace("-", "<");
             if (line1.Length > 44)
                 line1 = line1.Substring(0, 44);
-            var line2 = DocumentNumber.PadRight(9, '<') + CheckDigit(DocumentNumber.PadRight(9, '<')) + NationalityIso +
-                        DateOfBirth.ToString("yyMMdd") +
-                        CheckDigit(DateOfBirth.ToString("yyMMdd")) + Gender.Substring(0, 1) +
-                        ExpireDate.ToString("yyMMdd") +
-                        CheckDigit(ExpireDate.ToString("yyMMdd"));
+            var line2 = customer.DocumentNumber.PadRight(9, '<') + CheckDigit(customer.DocumentNumber.PadRight(9, '<')) + customer.NationalityIso +
+                        customer.DateOfBirth.ToString("yyMMdd") +
+                        CheckDigit(customer.DateOfBirth.ToString("yyMMdd")) + customer.Gender.Substring(0, 1) +
+                        customer.ExpireDate.ToString("yyMMdd") +
+                        CheckDigit(customer.ExpireDate.ToString("yyMMdd"));
             line2 = line2.PadRight(42, '<') + "0";
             var compositeCheckDigit =
                 CheckDigit(line2.Substring(0, 10) + line2.Substring(13, 7) +
@@ -280,10 +201,10 @@ namespace onMRZ
             return line1 + line2;
         }
 
-        internal static string CheckDigit(string icaoPassportNumber)
+        internal  string CheckDigit(string icaoPassportNumber)
         {
             //http://www.highprogrammer.com/alan/numbers/mrp.html#checkdigit
-            if (!CheckDigitArray.Any())
+            if (!_checkDigitArray.Any())
                 FillCheckDigitDictionary();
             icaoPassportNumber = icaoPassportNumber.ToUpper();
             var inputArray = icaoPassportNumber.Trim().ToCharArray();
@@ -291,7 +212,7 @@ namespace onMRZ
             var total = 0;
             foreach (var dig in inputArray)
             {
-                total = total + CheckDigitArray[dig] * multiplier;
+                total = total + _checkDigitArray[dig] * multiplier;
                 if (multiplier == 7) multiplier = 3;
                 else if (multiplier == 3) multiplier = 1;
                 else if (multiplier == 1) multiplier = 7;
@@ -302,45 +223,45 @@ namespace onMRZ
             return result.ToString();
         }
 
-        private static void FillCheckDigitDictionary()
+        private  void FillCheckDigitDictionary()
         {
-            CheckDigitArray.Add('<', 0);
-            CheckDigitArray.Add('0', 0);
-            CheckDigitArray.Add('1', 1);
-            CheckDigitArray.Add('2', 2);
-            CheckDigitArray.Add('3', 3);
-            CheckDigitArray.Add('4', 4);
-            CheckDigitArray.Add('5', 5);
-            CheckDigitArray.Add('6', 6);
-            CheckDigitArray.Add('7', 7);
-            CheckDigitArray.Add('8', 8);
-            CheckDigitArray.Add('9', 9);
-            CheckDigitArray.Add('A', 10);
-            CheckDigitArray.Add('B', 11);
-            CheckDigitArray.Add('C', 12);
-            CheckDigitArray.Add('D', 13);
-            CheckDigitArray.Add('E', 14);
-            CheckDigitArray.Add('F', 15);
-            CheckDigitArray.Add('G', 16);
-            CheckDigitArray.Add('H', 17);
-            CheckDigitArray.Add('I', 18);
-            CheckDigitArray.Add('J', 19);
-            CheckDigitArray.Add('K', 20);
-            CheckDigitArray.Add('L', 21);
-            CheckDigitArray.Add('M', 22);
-            CheckDigitArray.Add('N', 23);
-            CheckDigitArray.Add('O', 24);
-            CheckDigitArray.Add('P', 25);
-            CheckDigitArray.Add('Q', 26);
-            CheckDigitArray.Add('R', 27);
-            CheckDigitArray.Add('S', 28);
-            CheckDigitArray.Add('T', 29);
-            CheckDigitArray.Add('U', 30);
-            CheckDigitArray.Add('V', 31);
-            CheckDigitArray.Add('W', 32);
-            CheckDigitArray.Add('X', 33);
-            CheckDigitArray.Add('Y', 34);
-            CheckDigitArray.Add('Z', 35);
+            _checkDigitArray.Add('<', 0);
+            _checkDigitArray.Add('0', 0);
+            _checkDigitArray.Add('1', 1);
+            _checkDigitArray.Add('2', 2);
+            _checkDigitArray.Add('3', 3);
+            _checkDigitArray.Add('4', 4);
+            _checkDigitArray.Add('5', 5);
+            _checkDigitArray.Add('6', 6);
+            _checkDigitArray.Add('7', 7);
+            _checkDigitArray.Add('8', 8);
+            _checkDigitArray.Add('9', 9);
+            _checkDigitArray.Add('A', 10);
+            _checkDigitArray.Add('B', 11);
+            _checkDigitArray.Add('C', 12);
+            _checkDigitArray.Add('D', 13);
+            _checkDigitArray.Add('E', 14);
+            _checkDigitArray.Add('F', 15);
+            _checkDigitArray.Add('G', 16);
+            _checkDigitArray.Add('H', 17);
+            _checkDigitArray.Add('I', 18);
+            _checkDigitArray.Add('J', 19);
+            _checkDigitArray.Add('K', 20);
+            _checkDigitArray.Add('L', 21);
+            _checkDigitArray.Add('M', 22);
+            _checkDigitArray.Add('N', 23);
+            _checkDigitArray.Add('O', 24);
+            _checkDigitArray.Add('P', 25);
+            _checkDigitArray.Add('Q', 26);
+            _checkDigitArray.Add('R', 27);
+            _checkDigitArray.Add('S', 28);
+            _checkDigitArray.Add('T', 29);
+            _checkDigitArray.Add('U', 30);
+            _checkDigitArray.Add('V', 31);
+            _checkDigitArray.Add('W', 32);
+            _checkDigitArray.Add('X', 33);
+            _checkDigitArray.Add('Y', 34);
+            _checkDigitArray.Add('Z', 35);
         }
     }
 }

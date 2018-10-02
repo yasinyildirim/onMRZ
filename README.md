@@ -1,7 +1,7 @@
 # onMRZ
 This is a library that parses a machine readable zone (MRZ) found in Machine readable Documents for instance (Passport).
 It parses PassportNumber, FirstName, LastName, dates (ex.date of birth, expire date), nationality and issuing country.
-
+Currently, TD1 and TD3 types of MRZ format are supported.
 It can also generate the MRZ string itslef (Machine Readable Zone) if all the proper parameters are passed to it.
 
 

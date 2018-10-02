@@ -13,7 +13,7 @@ namespace onTest
 
         private void button1_Click(object sender, EventArgs e)
         {
-            var parser = new MRZParser();
+            var parser = new TD3MRZParser();
             var customer = parser.Parse(dfsMRZ.Text);
             dfsIssuingCountry.Text = customer.IssuingCountryIso;
             dfsFirstName.Text = customer.FirstName;
@@ -27,7 +27,7 @@ namespace onTest
 
         private void btnMake_Click(object sender, EventArgs e)
         {
-            var parser = new MRZParser();
+            var parser = new TD3MRZParser();
             var customer = new Customer
             {
                 IssuingCountryIso = dfsIssuingCountry.Text,
@@ -41,7 +41,7 @@ namespace onTest
             };
 
 
-            dfsMRZ.Text = parser.CreatMrz(customer, false);
+            dfsMRZ.Text = parser.CreateMRZ(customer);
         }
     }
 }

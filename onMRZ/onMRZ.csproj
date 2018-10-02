@@ -38,10 +38,13 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseMRZParser.cs" />
     <Compile Include="Customer.cs" />
-    <Compile Include="MRZParser.cs" />
+    <Compile Include="DocumetFieldTypes.cs" />
     <Compile Include="NationalityLookup.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TD1MRZParser.cs" />
+    <Compile Include="TD3MRZParser.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

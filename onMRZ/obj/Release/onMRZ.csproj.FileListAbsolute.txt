@@ -4,3 +4,12 @@ C:\Projects\onMRZ\onMRZ\bin\Release\Newtonsoft.Json.dll
 C:\Projects\onMRZ\onMRZ\bin\Release\Newtonsoft.Json.xml
 C:\Projects\onMRZ\onMRZ\obj\Release\onMRZ.dll
 C:\Projects\onMRZ\onMRZ\obj\Release\onMRZ.pdb
+D:\Downloads\yasin\MRZ-project\onMRZ\onMRZ\bin\Release\onMRZ.dll
+D:\Downloads\yasin\MRZ-project\onMRZ\onMRZ\bin\Release\onMRZ.pdb
+D:\Downloads\yasin\MRZ-project\onMRZ\onMRZ\bin\Release\Newtonsoft.Json.dll
+D:\Downloads\yasin\MRZ-project\onMRZ\onMRZ\bin\Release\Newtonsoft.Json.xml
+D:\Downloads\yasin\MRZ-project\onMRZ\onMRZ\obj\Release\onMRZ.csprojAssemblyReference.cache
+D:\Downloads\yasin\MRZ-project\onMRZ\onMRZ\obj\Release\onMRZ.csproj.CoreCompileInputs.cache
+D:\Downloads\yasin\MRZ-project\onMRZ\onMRZ\obj\Release\onMRZ.csproj.CopyComplete
+D:\Downloads\yasin\MRZ-project\onMRZ\onMRZ\obj\Release\onMRZ.dll
+D:\Downloads\yasin\MRZ-project\onMRZ\onMRZ\obj\Release\onMRZ.pdb

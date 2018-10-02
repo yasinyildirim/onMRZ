@@ -41,7 +41,11 @@ namespace onMRZ
         public DateTime ExpireDate { get; set; }
 
         public DateTime IssueDate { get; set; }
+
         public string IssuingAuthority { get; set; }
+
         public string PlaceOfBirth { get; set; }
+
+        public string OptionalData { get; set; }
     }
 }
